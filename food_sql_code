@@ -1,0 +1,102 @@
+--Code that shows all members with a subscription length of 3 months. (NOTE: subscription length field is in months). 
+
+select MemberID
+from Member 
+where subscription_length = 3;
+
+--Query shows how many members live in Canada. 
+
+select count(MemberID)
+from Member M
+inner join Country C on M.CountryID = C.CountryID
+where C.Country = “Canada”; 
+
+
+--List of all members who tracked bananas between January 1, 2018 and January 10, 2018.
+
+select MemberID
+from Member M
+inner join Food_Tracking T on M.MemberID = T.MemberID 
+inner join Food F on D.Food_ID = F.Food_ID
+where F.Food_Name = ‘banana’
+and T.Track_Date between ‘2018-01-01’ and ‘2018-01-10’;
+ 
+
+--Query that retrieves a list of all members who ever tracked less than 20 points on any single day in June
+
+select distinct MemberID
+from (
+	select MemberID, Sum(Points) as total_points 
+	from member M
+inner join Food_Tracking T on M.MemberID = T.MemberID 
+inner join Food F on T.Food_ID = F.Food_ID
+where T.Track_Date between ‘2018-06-01’ and ‘2018-06-31’
+group by MemberID, Track_Date
+)
+where total_points < 20;
+
+--List of all members who tracked an average of less than 20 points per day during June
+
+select distinct MemberID
+from
+(
+select MemberID, sum(daily_points)/30 as mean_points
+from (
+select M.MemberID, T.Track_Date, sum(Points) as daily_points
+	from member M
+inner join Food_Tracking T on M.MemberID = T.MemberID 
+inner join Food F on T.Food_ID = F.Food_ID
+where T.Track_Date between ‘2018-06-01’ and ‘2018-06-31’
+group by M.MemberID, T.Track_Date
+)
+group by MemberID
+)
+where mean_points < 20;
+ 
+--List of all members who never tracked 20 or more points on any day in June
+
+select MemberID,
+from member M
+inner join Food_Tracking T on M.MemberID = T.MemberID 
+where T.Track_Date between ‘2018-06-01’ and ‘2018-06-31’
+and M.MemberID not in
+(
+select MemberID
+from (
+	select Ma.MemberID, Ta.Track_date, sum(Fa.Points) as 
+daily_points
+from member Ma
+inner join Food_Tracking Ta on Ma.MemberID = 
+Ta.MemberID 
+inner join Food Fa on Ta.Food_ID = Fa.Food_ID
+where Ta.Track_Date between ‘2018-06-01’ and ‘2018-06-31’
+group_by Ma.MemberId, Ta.Track_Date
+)
+where daily_points > 20
+);
+
+--Shows the food with the second most amount of points
+
+select Food_Name
+from (
+select top 2 Food_Name, Points, row_number()
+over (order by Points desc) as index
+from Food
+	)
+where index = 2;
+ 
+
+
+--Finds what and when the 5th tracked food was for every member
+
+	select MemberId, FoodId, Track_Date
+from (
+		select MemberID, T.FoodID, T.Track_Date, row_number() over     
+(partition by M.MemberID order by Track_Date) as index 
+from Member M
+inner join Food_Tracking T on M.MemberID = T.MemberID
+	)
+where index = 5,
+select MemberId, Track_Date, F.Food_Name
+from Fifth_Food V
+inner join Foods F on V.Food_ID = F.Food_ID;
