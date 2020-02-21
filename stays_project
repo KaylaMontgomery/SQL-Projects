@@ -1,0 +1,64 @@
+--The following SQL query retrieves the average length of stay (number of nights between the check-in and check-out).
+
+
+(
+  SELECT a.stay_id, a.date AS check_in_date, b.date AS check_out_date
+  FROM (select stay_id, date FROM persons WHERE event_type = 'check-in') A 
+  INNER JOIN
+  (
+    SELECT stay_id, date 
+    FROM Persons
+    WHERE event_type = 'check-out'
+  ) B
+ ON A.stay_id = B.stay_id
+) C;
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+--The following query retrieves all stays that include (the night of) March 23rd 
+
+
+SELECT DISTINCT stay_id FROM
+(
+  SELECT a.stay_id, a.date AS check_in_date, b.date AS check_out_date
+  FROM (select stay_id, date FROM persons WHERE event_type = 'check-in') A 
+  INNER JOIN
+  (
+    SELECT stay_id, date 
+    FROM Persons
+    WHERE event_type = 'check-out'
+  ) B
+ ON A.stay_id = B.stay_id
+) C
+WHERE '2019-03-23' BETWEEN check_in_date AND check_out_date;
+
+
+------------------------------------------------------------------------------------------------------------------------------------
+--This code retrieves the daily average number of staying guests for a specific date range.
+--Note: this was actually done in R
+
+# R language:
+
+library(dplyr)
+library(tidyr
+
+get_average_by_date <- function(tbl_sql, start_date, end_date) {
+
+  date_range <- data.frame(date = seq.Date(as.Date(start_date), as.Date(end_date), "days"))
+  
+  stays <- tbl_sql %>%
+    group_by(stay_id) %>%
+    tidyr::complete(date = seq.Date(as.Date(min(date)), as.Date(max(date)), by = "day")) %>%
+    ungroup() %>%
+    filter(between(date, start_date, end_date)) %>%
+    group_by(date) %>%
+    summarize(count_guests = n())
+  
+  left_join(date_range, stays, by = "date") %>%
+    mutate(count_guests = if_else(is.na(count_guests), 0L, count_guests)) %>%
+    summarize(avg_guests = mean(count_guests)) %>%
+    pull(avg_guests)
+}
+
+--This function is dbplyr-compatible, which means the `dbplyr` R package can translate it 
+--into a SQL query against supported database backends.
